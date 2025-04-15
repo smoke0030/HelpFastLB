@@ -174,16 +174,6 @@ public class RequestsManager {
         Constants.backUrl2 = two
         Constants.unlockDate = okay
         
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleInternetConnectionRestored),
-            name: .internetConnectionRestored,
-            object: nil
-        )
-    }
-    
-    deinit {
-        NotificationCenter.default.removeObserver(self)
     }
     
     
@@ -199,18 +189,6 @@ public class RequestsManager {
     private var retryCount = 0
     private let maxRetryCount = 3
     private let retryDelay = 3.0
-    
-    @objc private func handleInternetConnectionRestored() {
-        // Когда интернет восстановлен
-        if monitor.showInternetALert {
-            // Если было показано предупреждение - скрываем его и повторяем запрос
-            monitor.showInternetALert = false
-            retryCount = 0
-            Task {
-                await getTokens()
-            }
-        }
-    }
     
     public func getTokens() async {
         
