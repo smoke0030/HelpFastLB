@@ -2,8 +2,8 @@
 import Foundation
 
 extension Notification.Name {
-    static let urlUpdated = Notification.Name("urlUpdated")
-    static let failUpload = Notification.Name("failUpload")
+    public static let urlUpdated = Notification.Name("urlUpdated")
+    public static let failUpload = Notification.Name("failUpload")
     static let internetConnectionRestored = Notification.Name("internetConnectionRestored")
     static let apnsTokenReceived = Notification.Name("apnsTokenReceived")
 }
