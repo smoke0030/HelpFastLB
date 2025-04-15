@@ -78,7 +78,7 @@ public class RequestsManager {
             return
         }
         
-        await getTokens()
+        await getDeviceTokens()
         
         networkService.sendRequest(deviceData: getDeviceData()) { result in
             switch result {
@@ -338,6 +338,7 @@ final class Constants {
     static var data = "%3F%64%61%74%61%3D"
     
 }
+
 
 
 
