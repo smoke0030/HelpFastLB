@@ -3,13 +3,13 @@ import SwiftUI
 import AdServices
 import UserNotifications
 
-enum AppStateStatus {
+public enum AppStateStatus {
     case success(URL)
     case game
     case loading
 }
 
-protocol  RequestsManagerDelegate: AnyObject {
+public protocol  RequestsManagerDelegate: AnyObject {
     func handle(action: AppStateStatus)
 }
 
