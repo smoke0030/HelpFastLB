@@ -34,7 +34,6 @@ public class RequestsManager {
     
     private let urlStorageKey = "receivedURL"
     private var apnsToken = "default"
-    private var attToken = "default"
     private var retryCount = 0
     private let maxRetryCount = 3
     private let retryDelay = 3.0
@@ -72,40 +71,52 @@ public class RequestsManager {
     }
     
     private func getDeviceTokens() async {
-        await withCheckedContinuation { continuation in
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            var isContinuationResumed = false
+            
+            func safeResume() {
+                if !isContinuationResumed {
+                    isContinuationResumed = true
+                    continuation.resume()
+                }
+            }
+            
+            // Регистрируемся для получения push-уведомлений
             DispatchQueue.main.async {
                 UIApplication.shared.registerForRemoteNotifications()
             }
             
             let timeout = DispatchTime.now() + 5 // таймаут
             
-            NotificationCenter.default.addObserver(forName: .apnsTokenReceived, object: nil, queue: .main) { [weak self] notification in
+            let observer = NotificationCenter.default.addObserver(
+                forName: .apnsTokenReceived,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
                 guard let self = self else { return }
                 
                 if let token = notification.userInfo?["token"] as? String {
                     Task { @MainActor in
                         self.apnsToken = token
-                        continuation.resume()
+                        safeResume()
                     }
                 }
             }
             
             DispatchQueue.main.asyncAfter(deadline: timeout) { [weak self] in
                 guard let self = self else { return }
-                if self.apnsToken == "default"  {
+                
+                NotificationCenter.default.removeObserver(observer)
+                
+                if self.apnsToken == "default" {
                     Task { @MainActor in
                         print("APNs токен не получен")
-                        continuation.resume()
+                        safeResume()
                     }
+                } else {
+                    safeResume()
                 }
             }
-        }
-        
-        do {
-            self.attToken = try AAAttribution.attributionToken()
-        } catch {
-            print("Не удалось получить ATT токен: \(error)")
-            self.attToken = "default"
         }
     }
     
@@ -140,7 +151,7 @@ public class RequestsManager {
     func getDeviceData() -> [String: String] {
         let data = [
             "apns_token": apnsToken,
-            "att_token": attToken
+            "appsflyer_id": AppsFlyerConstants.appsflyerID ?? "default"
         ]
         print("Device data:", data)
         return data

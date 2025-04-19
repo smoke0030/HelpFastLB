@@ -12,11 +12,20 @@ let package = Package(
             name: "HelpFastLB",
             targets: ["HelpFastLB"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/AppsFlyerSDK/AppsFlyerFramework", from: "6.16.2")
+    ],
+    
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "HelpFastLB"),
+            name: "HelpFastLB",
+            dependencies: [
+                .product(name: "AppsFlyerLib", package: "AppsFlyerFramework")
+            ]
+        ),
+            
         .testTarget(
             name: "HelpFastLBTests",
             dependencies: ["HelpFastLB"]),
