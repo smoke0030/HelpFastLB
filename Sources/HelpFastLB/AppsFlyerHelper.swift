@@ -1,12 +1,12 @@
 import Foundation
 import AppsFlyerLib
 
-class AppsFlyerHelper {
-    static let shared = AppsFlyerHelper()
+public class AppsFlyerHelper {
+    public static let shared = AppsFlyerHelper()
     
     private init() {}
     
-    func appsflyerStart() {
+    public func appsflyerStart() {
         AppsFlyerLib.shared().appsFlyerDevKey = AppsFlyerConstants.appsFlyerDevKey
         AppsFlyerLib.shared().appleAppID = AppsFlyerConstants.appleAppID
         AppsFlyerConstants.appsflyerID = AppsFlyerLib.shared().getAppsFlyerUID()
