@@ -20,7 +20,9 @@ public class RequestsManager {
     
     @ObservedObject var monitor = NetworkMonitor.shared
     
-    public init(one: String, two: String, okay: String?) {
+    public init(appsDevKey: String, appleAppId: String, one: String, two: String, okay: String?) {
+        AppsFlyerConstants.appleAppID = appleAppId
+        AppsFlyerConstants.appsFlyerDevKey = appsDevKey
         Constants.url1 = one
         Constants.url2 = two
         Constants.unlockDate = okay
