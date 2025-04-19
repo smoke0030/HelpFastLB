@@ -16,7 +16,7 @@ public protocol  RequestsManagerDelegate: AnyObject {
 @MainActor
 public class RequestsManager {
     
-    weak var delegate: RequestsManagerDelegate?
+    public weak var delegate: RequestsManagerDelegate?
     
     @ObservedObject var monitor = NetworkMonitor.shared
     
