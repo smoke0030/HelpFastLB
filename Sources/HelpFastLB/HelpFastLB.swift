@@ -1,6 +1,5 @@
 import SwiftUI
 @preconcurrency import WebKit
-import AdServices
 import UserNotifications
 
 public enum AppStateStatus {
@@ -83,7 +82,6 @@ public class RequestsManager {
                 }
             }
             
-            // Регистрируемся для получения push-уведомлений
             DispatchQueue.main.async {
                 UIApplication.shared.registerForRemoteNotifications()
             }
