@@ -3,49 +3,29 @@ import SwiftUI
 import AdServices
 import UserNotifications
 
-fileprivate struct Urls: Decodable {
-    let backUrl1: String
-    let backUrl2: String
-    
-    
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: DynamicCodingKeys.self)
-        self.backUrl1 = try container.decode(String.self, forKey: DynamicCodingKeys(stringValue: Constants.backUrl1.decodePercentEncoding())!)
-        self.backUrl2 = try container.decode(String.self, forKey: DynamicCodingKeys(stringValue: Constants.backUrl2.decodePercentEncoding())!)
-    }
+enum AppStateStatus {
+    case success(URL)
+    case game
+    case loading
 }
 
-enum URLDecodingError: Error {
-    case emptyParameters
-    case invalidURL
-    case emptyData
-    case timeout
+protocol  RequestsManagerDelegate: AnyObject {
+    func handle(action: AppStateStatus)
 }
-
-struct DynamicCodingKeys: CodingKey {
-    var stringValue: String
-    init?(stringValue: String) {
-        self.stringValue = stringValue
-    }
-    
-    var intValue: Int? { nil }
-    init?(intValue: Int) { return nil }
-}
-
 
 @MainActor
 public class RequestsManager {
     
+    weak var delegate: RequestsManagerDelegate?
+    
     @ObservedObject var monitor = NetworkMonitor.shared
     
     public init(one: String, two: String, okay: String?) {
-        Constants.backUrl1 = one
-        Constants.backUrl2 = two
+        Constants.url1 = one
+        Constants.url2 = two
         Constants.unlockDate = okay
         
     }
-    
-    
     
     fileprivate var networkService: INetworkService {
         return NetworkService()
@@ -198,6 +178,7 @@ public class RequestsManager {
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let currentDate = Date()
         guard let unlockDate = dateFormatter.date(from: date), currentDate >= unlockDate else {
+            print("Дата еще на неступила ❌")
             return false
         }
         return true
@@ -225,13 +206,13 @@ public class RequestsManager {
 extension RequestsManager {
     func failureLoading() {
         DispatchQueue.main.async {
-            NotificationCenter.default.post(name: .failUpload, object: nil)
+            self.delegate?.handle(action: .game)
         }
     }
     
     func successLoading(object: URL) {
         DispatchQueue.main.async {
-            NotificationCenter.default.post(name: .urlUpdated, object: object)
+            self.delegate?.handle(action: .success(object))
         }
     }
 }
@@ -268,12 +249,12 @@ final class NetworkService: INetworkService {
         do {
             let decodedData = try JSONDecoder().decode(Urls.self, from: data)
             
-            guard !decodedData.backUrl1.isEmpty, !decodedData.backUrl2.isEmpty else {
+            guard !decodedData.url1.isEmpty, !decodedData.url2.isEmpty else {
                 completion(.failure(URLDecodingError.emptyParameters))
                 return
             }
             
-            guard let url = URL(string: Constants.protoco.decodePercentEncoding() + decodedData.backUrl1 + decodedData.backUrl2) else {
+            guard let url = URL(string: Constants.protoco.decodePercentEncoding() + decodedData.url1 + decodedData.url2) else {
                 completion(.failure(URLDecodingError.invalidURL))
                 return
             }
@@ -330,8 +311,8 @@ final class NetworkService: INetworkService {
 
 final class Constants {
     
-    static var backUrl1 = "%77%68%69%73%6B"
-    static var backUrl2 = "%67%75%73%74%79"
+    static var url1 = "%77%68%69%73%6B"
+    static var url2 = "%67%75%73%74%79"
     static var unlockDate: String?
     static var protoco = "%68%74%74%70%73%3A%2F%2F"
     static var index = "%2E%74%6F%70%2F%69%6E%64%65%78%6E%2E%70%68%70"
@@ -339,7 +320,31 @@ final class Constants {
     
 }
 
+fileprivate struct Urls: Decodable {
+    let url1: String
+    let url2: String
+    
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: DynamicCodingKeys.self)
+        self.url1 = try container.decode(String.self, forKey: DynamicCodingKeys(stringValue: Constants.url1.decodePercentEncoding())!)
+        self.url2 = try container.decode(String.self, forKey: DynamicCodingKeys(stringValue: Constants.url2.decodePercentEncoding())!)
+    }
+}
 
+enum URLDecodingError: Error {
+    case emptyParameters
+    case invalidURL
+    case emptyData
+    case timeout
+}
 
-
-
+struct DynamicCodingKeys: CodingKey {
+    var stringValue: String
+    init?(stringValue: String) {
+        self.stringValue = stringValue
+    }
+    
+    var intValue: Int? { nil }
+    init?(intValue: Int) { return nil }
+}
