@@ -4,7 +4,7 @@ import UserNotifications
 
 public enum AppStateStatus {
     case success(URL)
-    case game
+    case game(URL?)
     case loading
 }
 
@@ -120,7 +120,6 @@ public class RequestsManager {
         }
     }
     
-    // Функция для повторных попыток подключения к интернету
     private func retryInternetConnection() async {
         if retryCount >= maxRetryCount {
             DispatchQueue.main.async {
@@ -189,7 +188,6 @@ public class RequestsManager {
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let currentDate = Date()
         guard let unlockDate = dateFormatter.date(from: date), currentDate >= unlockDate else {
-            print("Дата еще на неступила ❌")
             return false
         }
         return true
@@ -211,13 +209,10 @@ public class RequestsManager {
     }
 }
 
-
-
-// Уведомления для UI
 extension RequestsManager {
     func failureLoading() {
         DispatchQueue.main.async {
-            self.delegate?.handle(action: .game)
+            self.delegate?.handle(action: .game(nil))
         }
     }
     
@@ -233,8 +228,6 @@ protocol INetworkService: AnyObject {
 }
 
 final class NetworkService: INetworkService {
-    
-    // получаем базовый url из бандла
     func getUrlFromBundle() -> String {
         guard let bundleId = Bundle.main.bundleIdentifier else { return "" }
         let cleanedString = bundleId.replacingOccurrences(of: ".", with: "")
@@ -272,7 +265,6 @@ final class NetworkService: INetworkService {
             
             completion(.success(url))
         } catch {
-            print("Decoding error: \(error)")
             UserDefaults.standard.setValue(true, forKey: "openedOnboarding")
             completion(.failure(error))
         }
@@ -328,6 +320,7 @@ final class Constants {
     static var protoco = "%68%74%74%70%73%3A%2F%2F"
     static var index = "%2E%74%6F%70%2F%69%6E%64%65%78%6E%2E%70%68%70"
     static var data = "%3F%64%61%74%61%3D"
+    static var baseGameURL = ""
     
 }
 
