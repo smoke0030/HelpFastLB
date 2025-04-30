@@ -1,11 +1,10 @@
 import SwiftUI
 
 @MainActor
-final class TokensHelper {
+public final class TokensHelper {
     
     public weak var delegate: RequestsManagerDelegate?
     
-    @Published var showInternetALert = false
     @ObservedObject var monitor = NetworkMonitor.shared
     private let urlStorageKey = "receivedURL"
     private let hasLaunchedBeforeKey = "hasLaunchedBefore"
@@ -22,7 +21,7 @@ final class TokensHelper {
         Constants.baseGameURL = baseSsylka
     }
     
-    func getData() async {
+    public func getData() async {
         
         
         if !monitor.isActive {
@@ -30,9 +29,7 @@ final class TokensHelper {
             return
         }
         
-        // НОВОЕ: Если интернет доступен, сбрасываем счетчик повторов и предупреждение
         retryCount = 0
-        showInternetALert = false
         
         if !isFirstLaunch() {
             handleStoredState()
