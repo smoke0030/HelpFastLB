@@ -407,15 +407,18 @@ public struct Payload: View {
             switch currentScreen {
                     
                 case .success(let url):
-                    CoreView(url: url, orientation: coreOrientation)
+                    CoreView(url: url)
+                        .supportedOrientations(coreOrientation)
                 case .game(_):
-                    GameView(orientation: gameOrientation) {
+                    GameView() {
                         Views.gameView()
                     }
+                    .supportedOrientations(gameOrientation)
                 case .loading:
-                    LoadingView(orientation: loadingOrientation) {
+                    LoadingView() {
                         Views.loadingView()
                     }
+                    .supportedOrientations(loadingOrientation)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .succesfullUpdate)) { notification in
@@ -450,18 +453,15 @@ public class Views {
 
 public struct GameView<Content: View>: View {
     let content: Content
-    let orientation: AppOrientationType
         
-        public init(orientation: AppOrientationType = .portrait, @ViewBuilder content: () -> Content) {
+        public init(@ViewBuilder content: () -> Content) {
             self.content = content()
-            self.orientation = orientation
         }
     
     public var body: some View {
         ZStack {
             content
         }
-        .supportedOrientations(orientation)
     }
 }
 
@@ -469,18 +469,15 @@ public struct GameView<Content: View>: View {
 
 public struct LoadingView<Content: View>: View {
     let content: Content
-    let orientation: AppOrientationType
         
-        public init(orientation: AppOrientationType = .portrait, @ViewBuilder content: () -> Content) {
+        public init(@ViewBuilder content: () -> Content) {
             self.content = content()
-            self.orientation = orientation
         }
     
     public var body: some View {
         ZStack {
             content
         }
-        .supportedOrientations(orientation)
     }
 }
 
@@ -492,11 +489,9 @@ class CoreViewModel: ObservableObject {
 public struct CoreView: View {
     @StateObject var coreVM = CoreViewModel()
     let url: URL
-    let orientation: AppOrientationType
     
-    public init(url: URL, orientation: AppOrientationType = .all) {
+    public init(url: URL) {
             self.url = url
-            self.orientation = orientation
         }
     
     public var body: some View {
@@ -511,7 +506,6 @@ public struct CoreView: View {
             }
         }
         .statusBarHidden(true)
-        .supportedOrientations(orientation)
     }
 }
 
