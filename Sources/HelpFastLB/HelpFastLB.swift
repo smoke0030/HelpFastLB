@@ -395,6 +395,7 @@ let userScript = """
 
 public struct Payload: View {
     @State var currentScreen: AppStateStatus = .loading
+    public init() {}
     public var body: some View {
         Group {
             switch currentScreen {
