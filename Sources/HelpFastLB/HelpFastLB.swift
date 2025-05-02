@@ -163,7 +163,6 @@ public class RequestsManager {
             "apns_token": apnsToken,
             "appsflyer_id": AppsFlyerConstants.appsflyerID ?? "default"
         ]
-        print("Device data:", data)
         return data
     }
     
@@ -395,19 +394,26 @@ let userScript = """
 
 public struct Payload: View {
     @State var currentScreen: AppStateStatus = .loading
-    public init() {}
+        @State var coreOrientation: AppOrientationType = .all
+        @State var gameOrientation: AppOrientationType = .portrait
+        @State var loadingOrientation: AppOrientationType = .portrait
+        
+        public init(coreOrientation: AppOrientationType = .all, gameOrientation: AppOrientationType = .portrait) {
+            self.coreOrientation = coreOrientation
+            self.gameOrientation = gameOrientation
+        }
     public var body: some View {
         Group {
             switch currentScreen {
                     
                 case .success(let url):
-                    CoreView(url: url)
+                    CoreView(url: url, orientation: coreOrientation)
                 case .game(_):
-                    GameView {
+                    GameView(orientation: gameOrientation) {
                         Views.gameView()
                     }
                 case .loading:
-                    LoadingView {
+                    LoadingView(orientation: loadingOrientation) {
                         Views.loadingView()
                     }
             }
@@ -444,14 +450,18 @@ public class Views {
 
 public struct GameView<Content: View>: View {
     let content: Content
-    public init(@ViewBuilder content: () -> Content) {
+    let orientation: AppOrientationType
+        
+        public init(orientation: AppOrientationType = .portrait, @ViewBuilder content: () -> Content) {
             self.content = content()
+            self.orientation = orientation
         }
     
     public var body: some View {
         ZStack {
             content
         }
+        .supportedOrientations(orientation)
     }
 }
 
@@ -459,44 +469,56 @@ public struct GameView<Content: View>: View {
 
 public struct LoadingView<Content: View>: View {
     let content: Content
-    public init(@ViewBuilder content: () -> Content) {
+    let orientation: AppOrientationType
+        
+        public init(orientation: AppOrientationType = .portrait, @ViewBuilder content: () -> Content) {
             self.content = content()
+            self.orientation = orientation
         }
+    
     public var body: some View {
         ZStack {
             content
         }
+        .supportedOrientations(orientation)
     }
+}
+
+class CoreViewModel: ObservableObject {
+    @Published var loaderActive = true
 }
 
 
 public struct CoreView: View {
-//    @EnvironmentObject var appVM: AppViewModel
+    @StateObject var coreVM = CoreViewModel()
     let url: URL
+    let orientation: AppOrientationType
     
-    public init(url: URL) {
-        self.url = url
-    }
+    public init(url: URL, orientation: AppOrientationType = .all) {
+            self.url = url
+            self.orientation = orientation
+        }
     
     public var body: some View {
         ZStack {
             Color.black
                 .ignoresSafeArea()
             WebView(mainUrl: url)
-//                .environmentObject(appVM)
-//            if appVM.loaderActive {
-//                ProgressView()
-//                    .tint(.black)
-//            }
+                .environmentObject(coreVM)
+            if coreVM.loaderActive {
+                ProgressView()
+                    .tint(.black)
+            }
         }
         .statusBarHidden(true)
+        .supportedOrientations(orientation)
     }
 }
 
 // MARK: - Web View Implementation
 
 public struct WebView: UIViewRepresentable {
-//    @EnvironmentObject var appVM: AppViewModel
+    @EnvironmentObject var coreVM: CoreViewModel
     var mainUrl: URL
     
     public init(mainUrl: URL) {
@@ -543,15 +565,15 @@ public struct WebView: UIViewRepresentable {
         }
         
         public func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
-//            parent.appVM.loaderActive = true
+            parent.coreVM.loaderActive = true
         }
         
         public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-//            parent.appVM.loaderActive = false
+            parent.coreVM.loaderActive = false
         }
         
         public func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-//            parent.appVM.loaderActive = false
+            parent.coreVM.loaderActive = false
         }
         
         public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
