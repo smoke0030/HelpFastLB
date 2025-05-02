@@ -414,8 +414,7 @@ public struct Payload: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .succesfullUpdate)) { notification in
             withAnimation(.easeInOut(duration: 0.5)) {
-                if let stringUrl = notification.object as? String,
-                   let url = URL(string: stringUrl) {
+                if let url = notification.object as? URL {
                     currentScreen = .success(url)
                 }
                 }
