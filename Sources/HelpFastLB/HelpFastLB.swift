@@ -10,23 +10,33 @@ public enum AppStateStatus {
 
 public protocol  RequestsManagerDelegate: AnyObject {
     func handle(action: AppStateStatus)
+
 }
+
+
+
 
 @MainActor
 public class RequestsManager {
     
-    public weak var delegate: RequestsManagerDelegate?
+//    public weak var delegate: RequestsManagerDelegate?
     
     @ObservedObject var monitor = NetworkMonitor.shared
     
-    public init(appsDevKey: String, appleAppId: String, one: String, two: String, okay: String?) {
-        AppsFlyerConstants.appleAppID = appleAppId
-        AppsFlyerConstants.appsFlyerDevKey = appsDevKey
-        Constants.url1 = one
-        Constants.url2 = two
-        Constants.unlockDate = okay
-        
-    }
+    
+    public init(
+        gameContent: @escaping () -> AnyView,
+        loadingContent: @escaping () -> AnyView,
+        appsDevKey: String, appleAppId: String, one: String, two: String, okay: String?) {
+            AppsFlyerConstants.appleAppID = appleAppId
+            AppsFlyerConstants.appsFlyerDevKey = appsDevKey
+            Constants.url1 = one
+            Constants.url2 = two
+            Constants.unlockDate = okay
+            Views.gameView = gameContent
+            Views.loadingView = loadingContent
+            
+        }
     
     fileprivate var networkService: INetworkService {
         return NetworkService()
@@ -120,6 +130,7 @@ public class RequestsManager {
         }
     }
     
+   
     private func retryInternetConnection() async {
         if retryCount >= maxRetryCount {
             DispatchQueue.main.async {
@@ -212,13 +223,16 @@ public class RequestsManager {
 extension RequestsManager {
     func failureLoading() {
         DispatchQueue.main.async {
-            self.delegate?.handle(action: .game(nil))
+//            self.delegate?.handle(action: .game(nil))
+            NotificationCenter.default.post(name: .failedUpdate, object: AppStateStatus.game(nil))
         }
     }
     
     func successLoading(object: URL) {
         DispatchQueue.main.async {
-            self.delegate?.handle(action: .success(object))
+//            self.delegate?.handle(action: .success(object))
+            NotificationCenter.default.post(name: .succesfullUpdate, object: AppStateStatus.success(object))
+            
         }
     }
 }
@@ -351,4 +365,111 @@ struct DynamicCodingKeys: CodingKey {
     
     var intValue: Int? { nil }
     init?(intValue: Int) { return nil }
+}
+
+
+let userScript = """
+                (function() {
+                    // Оригинальная функция preventDefault
+                    const originalPreventDefault = Event.prototype.preventDefault;
+                    
+                    // Переопределяем preventDefault для touch-событий
+                    Event.prototype.preventDefault = function() {
+                        // Если это touch-событие и начинается у левого края экрана (зона свайпа)
+                        if ((this.type.startsWith('touch')) && 
+                            this.touches && 
+                            this.touches[0] && 
+                            this.touches[0].clientX < 80) {
+                            // Пропускаем preventDefault, позволяя нативным жестам работать
+                            console.log('Разрешаем жест от края экрана');
+                            return;
+                        }
+                        
+                        // Для других событий вызываем оригинальный preventDefault
+                        originalPreventDefault.call(this);
+                    };
+                    
+                    console.log('JavaScript инъекция для жестов загружена');
+                })();
+                """
+
+public struct Payload: View {
+    @State var currentScreen: AppStateStatus = .loading
+    public var body: some View {
+        Group {
+            switch currentScreen {
+                    
+                case .success(_):
+                    WevView()
+                case .game(_):
+                    GameView {
+                        Views.gameView()
+                    }
+                case .loading:
+                    LoadingView {
+                        Views.loadingView()
+                    }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .succesfullUpdate)) { notification in
+            withAnimation(.easeInOut(duration: 0.5)) {
+                if let stringUrl = notification.object as? String,
+                   let url = URL(string: stringUrl) {
+                    currentScreen = .success(url)
+                }
+                }
+                
+        }
+        
+        .onReceive(NotificationCenter.default.publisher(for: .failedUpdate)) { notification in
+            withAnimation(.easeInOut(duration: 0.5)) {
+                currentScreen = .game(nil)
+                }
+                
+        }
+       
+    }
+}
+
+class Views {
+    static var gameView: () -> AnyView = {
+        AnyView(Text("game view"))
+    }
+    
+    static var loadingView: () -> AnyView = {
+        AnyView(Text("loading view"))
+    }
+}
+
+
+struct GameView<Content: View>: View {
+    let content: Content
+    init(@ViewBuilder content: () -> Content) {
+            self.content = content()
+        }
+    
+    var body: some View {
+        ZStack {
+            content
+        }
+    }
+}
+
+struct WevView: View {
+    var body: some View {
+        Text("web view")
+    }
+}
+
+
+struct LoadingView<Content: View>: View {
+    let content: Content
+    init(@ViewBuilder content: () -> Content) {
+            self.content = content()
+        }
+    var body: some View {
+        ZStack {
+            content
+        }
+    }
 }

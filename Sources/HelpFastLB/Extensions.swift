@@ -4,6 +4,8 @@ import Foundation
 extension Notification.Name {
     static let internetConnectionRestored = Notification.Name("internetConnectionRestored")
     public static let apnsTokenReceived = Notification.Name("apnsTokenReceived")
+    public static let succesfullUpdate = Notification.Name("succesfullUpdate")
+    public static let failedUpdate = Notification.Name("failedUpdate")
 }
 
 
