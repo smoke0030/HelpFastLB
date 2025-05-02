@@ -431,12 +431,12 @@ public struct Payload: View {
     }
 }
 
-class Views {
-    static var gameView: () -> AnyView = {
+public class Views {
+    public static var gameView: () -> AnyView = {
         AnyView(Text("game view"))
     }
     
-    static var loadingView: () -> AnyView = {
+    public static var loadingView: () -> AnyView = {
         AnyView(Text("loading view"))
     }
 }
