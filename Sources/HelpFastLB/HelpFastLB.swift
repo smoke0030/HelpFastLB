@@ -8,21 +8,10 @@ public enum AppStateStatus {
     case loading
 }
 
-public protocol  RequestsManagerDelegate: AnyObject {
-    func handle(action: AppStateStatus)
-
-}
-
-
-
-
 @MainActor
 public class RequestsManager {
     
-//    public weak var delegate: RequestsManagerDelegate?
-    
     @ObservedObject var monitor = NetworkMonitor.shared
-    
     
     public init(
         gameContent: @escaping () -> AnyView,
@@ -130,7 +119,7 @@ public class RequestsManager {
         }
     }
     
-   
+    
     private func retryInternetConnection() async {
         if retryCount >= maxRetryCount {
             DispatchQueue.main.async {
@@ -152,7 +141,7 @@ public class RequestsManager {
                 await getDeviceTokens()
             }
         } else {
-           
+            
             await retryInternetConnection()
         }
     }
@@ -222,14 +211,12 @@ public class RequestsManager {
 extension RequestsManager {
     func failureLoading() {
         DispatchQueue.main.async {
-//            self.delegate?.handle(action: .game(nil))
             NotificationCenter.default.post(name: .failedUpdate, object: nil)
         }
     }
     
     func successLoading(object: URL) {
         DispatchQueue.main.async {
-//            self.delegate?.handle(action: .success(object))
             NotificationCenter.default.post(name: .succesfullUpdate, object: object)
             
         }
@@ -394,14 +381,15 @@ let userScript = """
 
 public struct Payload: View {
     @State var currentScreen: AppStateStatus = .loading
-        @State var coreOrientation: AppOrientationType = .all
-        @State var gameOrientation: AppOrientationType = .portrait
-        @State var loadingOrientation: AppOrientationType = .portrait
-        
-        public init(coreOrientation: AppOrientationType = .all, gameOrientation: AppOrientationType = .portrait) {
-            self.coreOrientation = coreOrientation
-            self.gameOrientation = gameOrientation
-        }
+    @State var coreOrientation: AppOrientationType = .all
+    @State var gameOrientation: AppOrientationType = .portrait
+    @State var loadingOrientation: AppOrientationType = .portrait
+    
+    public init(coreOrientation: AppOrientationType = .all, gameOrientation: AppOrientationType = .portrait, loadingOrientation: AppOrientationType = .portrait) {
+        self.coreOrientation = coreOrientation
+        self.gameOrientation = gameOrientation
+        self.loadingOrientation = loadingOrientation
+    }
     public var body: some View {
         Group {
             switch currentScreen {
@@ -426,17 +414,17 @@ public struct Payload: View {
                 if let url = notification.object as? URL {
                     currentScreen = .success(url)
                 }
-                }
-                
+            }
+            
         }
         
         .onReceive(NotificationCenter.default.publisher(for: .failedUpdate)) { notification in
             withAnimation(.easeInOut(duration: 0.5)) {
                 currentScreen = .game(nil)
-                }
-                
+            }
+            
         }
-       
+        
     }
 }
 
@@ -451,14 +439,14 @@ public class Views {
 }
 
 
-public struct GameView<Content: View>: View {
+struct GameView<Content: View>: View {
     let content: Content
-        
-        public init(@ViewBuilder content: () -> Content) {
-            self.content = content()
-        }
     
-    public var body: some View {
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+    
+    var body: some View {
         ZStack {
             content
         }
@@ -467,14 +455,14 @@ public struct GameView<Content: View>: View {
 
 
 
-public struct LoadingView<Content: View>: View {
+struct LoadingView<Content: View>: View {
     let content: Content
-        
-        public init(@ViewBuilder content: () -> Content) {
-            self.content = content()
-        }
     
-    public var body: some View {
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+    
+    var body: some View {
         ZStack {
             content
         }
@@ -486,15 +474,15 @@ class CoreViewModel: ObservableObject {
 }
 
 
-public struct CoreView: View {
+struct CoreView: View {
     @StateObject var coreVM = CoreViewModel()
     let url: URL
     
-    public init(url: URL) {
-            self.url = url
-        }
+    init(url: URL) {
+        self.url = url
+    }
     
-    public var body: some View {
+    var body: some View {
         ZStack {
             Color.black
                 .ignoresSafeArea()
@@ -511,15 +499,15 @@ public struct CoreView: View {
 
 // MARK: - Web View Implementation
 
-public struct WebView: UIViewRepresentable {
+struct WebView: UIViewRepresentable {
     @EnvironmentObject var coreVM: CoreViewModel
     var mainUrl: URL
     
-    public init(mainUrl: URL) {
+    init(mainUrl: URL) {
         self.mainUrl = mainUrl
     }
     
-    public func makeUIView(context: Context) -> WKWebView {
+    func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.defaultWebpagePreferences.allowsContentJavaScript = true
         config.preferences.javaScriptCanOpenWindowsAutomatically = true
@@ -545,32 +533,32 @@ public struct WebView: UIViewRepresentable {
         return webView
     }
     
-    public func updateUIView(_ uiView: WKWebView, context: Context) {}
+    func updateUIView(_ uiView: WKWebView, context: Context) {}
     
-    public func makeCoordinator() -> Coordinator {
+    func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
     
-    public class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+    class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         var parent: WebView
         
         init(_ parent: WebView) {
             self.parent = parent
         }
         
-        public func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
             parent.coreVM.loaderActive = true
         }
         
-        public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             parent.coreVM.loaderActive = false
         }
         
-        public func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
             parent.coreVM.loaderActive = false
         }
         
-        public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             if let url = navigationAction.request.url {
                 if navigationAction.targetFrame == nil {
                     webView.load(URLRequest(url: url))
@@ -582,7 +570,7 @@ public struct WebView: UIViewRepresentable {
             decisionHandler(.allow)
         }
         
-        public func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
             if let url = navigationAction.request.url {
                 webView.load(URLRequest(url: url))
             }
