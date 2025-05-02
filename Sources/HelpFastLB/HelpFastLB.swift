@@ -400,8 +400,8 @@ public struct Payload: View {
         Group {
             switch currentScreen {
                     
-                case .success(_):
-                    WevView()
+                case .success(let url):
+                    CoreView(url: url)
                 case .game(_):
                     GameView {
                         Views.gameView()
@@ -456,11 +456,6 @@ public struct GameView<Content: View>: View {
     }
 }
 
-public struct WevView: View {
-    public var body: some View {
-        Text("web view")
-    }
-}
 
 
 public struct LoadingView<Content: View>: View {
@@ -472,5 +467,128 @@ public struct LoadingView<Content: View>: View {
         ZStack {
             content
         }
+    }
+}
+
+
+public struct CoreView: View {
+//    @EnvironmentObject var appVM: AppViewModel
+    let url: URL
+    
+    public init(url: URL) {
+        self.url = url
+    }
+    
+    public var body: some View {
+        ZStack {
+            Color.black
+                .ignoresSafeArea()
+            WebView(mainUrl: url)
+//                .environmentObject(appVM)
+//            if appVM.loaderActive {
+//                ProgressView()
+//                    .tint(.black)
+//            }
+        }
+        .statusBarHidden(true)
+    }
+}
+
+// MARK: - Web View Implementation
+
+public struct WebView: UIViewRepresentable {
+//    @EnvironmentObject var appVM: AppViewModel
+    var mainUrl: URL
+    
+    public init(mainUrl: URL) {
+        self.mainUrl = mainUrl
+    }
+    
+    public func makeUIView(context: Context) -> WKWebView {
+        let config = WKWebViewConfiguration()
+        config.defaultWebpagePreferences.allowsContentJavaScript = true
+        config.preferences.javaScriptCanOpenWindowsAutomatically = true
+        config.mediaTypesRequiringUserActionForPlayback = []
+        
+        config.websiteDataStore = WKWebsiteDataStore.default()
+        
+        let webView = WKWebView(frame: .zero, configuration: config)
+        webView.navigationDelegate = context.coordinator
+        webView.uiDelegate = context.coordinator
+        webView.allowsBackForwardNavigationGestures = true
+        
+        webView.evaluateJavaScript("navigator.userAgent") { (result, error) in
+            if let userAgent = result as? String {
+                let patchedUserAgent = self.patchUserAgent(userAgent)
+                webView.customUserAgent = patchedUserAgent
+            }
+        }
+        
+        let request = URLRequest(url: mainUrl, cachePolicy: .returnCacheDataElseLoad)
+        webView.load(request)
+        
+        return webView
+    }
+    
+    public func updateUIView(_ uiView: WKWebView, context: Context) {}
+    
+    public func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    public class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+        var parent: WebView
+        
+        init(_ parent: WebView) {
+            self.parent = parent
+        }
+        
+        public func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+//            parent.appVM.loaderActive = true
+        }
+        
+        public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+//            parent.appVM.loaderActive = false
+        }
+        
+        public func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+//            parent.appVM.loaderActive = false
+        }
+        
+        public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+            if let url = navigationAction.request.url {
+                if navigationAction.targetFrame == nil {
+                    webView.load(URLRequest(url: url))
+                    decisionHandler(.cancel)
+                    return
+                }
+            }
+            
+            decisionHandler(.allow)
+        }
+        
+        public func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+            if let url = navigationAction.request.url {
+                webView.load(URLRequest(url: url))
+            }
+            return nil
+        }
+    }
+}
+
+extension WebView {
+    private func patchUserAgent(_ userAgent: String) -> String {
+        let versionSubstring = "Version/16.2"
+        var patchedAgent = userAgent
+        
+        if !patchedAgent.contains("Version/") {
+            if let position = patchedAgent.range(of: "like Gecko)")?.upperBound {
+                patchedAgent.insert(contentsOf: " " + versionSubstring, at: position)
+            } else if let position = patchedAgent.range(of: "Mobile/")?.lowerBound {
+                patchedAgent.insert(contentsOf: versionSubstring + " ", at: position)
+            }
+        }
+        
+        return patchedAgent
     }
 }
