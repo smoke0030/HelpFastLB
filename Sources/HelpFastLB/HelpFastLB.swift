@@ -442,32 +442,32 @@ class Views {
 }
 
 
-struct GameView<Content: View>: View {
+public struct GameView<Content: View>: View {
     let content: Content
-    init(@ViewBuilder content: () -> Content) {
+    public init(@ViewBuilder content: () -> Content) {
             self.content = content()
         }
     
-    var body: some View {
+    public var body: some View {
         ZStack {
             content
         }
     }
 }
 
-struct WevView: View {
-    var body: some View {
+public struct WevView: View {
+    public var body: some View {
         Text("web view")
     }
 }
 
 
-struct LoadingView<Content: View>: View {
+public struct LoadingView<Content: View>: View {
     let content: Content
-    init(@ViewBuilder content: () -> Content) {
+    public init(@ViewBuilder content: () -> Content) {
             self.content = content()
         }
-    var body: some View {
+    public var body: some View {
         ZStack {
             content
         }
