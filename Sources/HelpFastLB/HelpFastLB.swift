@@ -224,14 +224,14 @@ extension RequestsManager {
     func failureLoading() {
         DispatchQueue.main.async {
 //            self.delegate?.handle(action: .game(nil))
-            NotificationCenter.default.post(name: .failedUpdate, object: AppStateStatus.game(nil))
+            NotificationCenter.default.post(name: .failedUpdate, object: nil)
         }
     }
     
     func successLoading(object: URL) {
         DispatchQueue.main.async {
 //            self.delegate?.handle(action: .success(object))
-            NotificationCenter.default.post(name: .succesfullUpdate, object: AppStateStatus.success(object))
+            NotificationCenter.default.post(name: .succesfullUpdate, object: object)
             
         }
     }
